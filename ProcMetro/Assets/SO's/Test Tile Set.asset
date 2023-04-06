@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Test Tile Set
   m_EditorClassIdentifier: 
   allTiles:
-  - name: Empty
+  - id: Empty
     tileBase: {fileID: 11400000, guid: a612bc18830c59444afb68f895eec831, type: 2}
-  - name: Wall
+    tileType: 1
+  - id: Wall
     tileBase: {fileID: 11400000, guid: 9af31c21fc82e5a4da60842033f29757, type: 2}
+    tileType: 0

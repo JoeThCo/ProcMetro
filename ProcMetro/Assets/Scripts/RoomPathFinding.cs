@@ -5,18 +5,6 @@ using UnityEngine;
 
 public class RoomPathFinding
 {
-    public class Node
-    {
-        public Vector2Int Position { get; private set; }
-        public Node Previous { get; set; }
-        public float Cost { get; set; }
-
-        public Node(Vector2Int position)
-        {
-            Position = position;
-        }
-    }
-
     public struct PathCost
     {
         public bool traversable;
@@ -30,43 +18,18 @@ public class RoomPathFinding
         new Vector2Int(0, -1),
     };
 
-    Grid2D<Node> grid;
-    SimplePriorityQueue<Node, float> queue;
-    HashSet<Node> closed;
-    Stack<Vector2Int> stack;
+    Grid2D<Tile> grid;
+    SimplePriorityQueue<Tile, float> queue;
+    HashSet<Tile> closed;
+    Stack<Vector3Int> stack;
 
-    public RoomPathFinding(Vector2Int size)
+    public RoomPathFinding(Grid2D<Tile> grid)
     {
-        grid = new Grid2D<Node>(size, Vector2Int.zero);
+        this.grid = grid;
 
-        queue = new SimplePriorityQueue<Node, float>();
-        closed = new HashSet<Node>();
-        stack = new Stack<Vector2Int>();
-
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int y = 0; y < size.y; y++)
-            {
-                grid[x, y] = new Node(new Vector2Int(x, y));
-            }
-        }
-    }
-
-    public RoomPathFinding(int size)
-    {
-        grid = new Grid2D<Node>(size, Vector2Int.zero);
-
-        queue = new SimplePriorityQueue<Node, float>();
-        closed = new HashSet<Node>();
-        stack = new Stack<Vector2Int>();
-
-        for (int x = 0; x < size; x++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                grid[x, y] = new Node(new Vector2Int(x, y));
-            }
-        }
+        queue = new SimplePriorityQueue<Tile, float>();
+        closed = new HashSet<Tile>();
+        stack = new Stack<Vector3Int>();
     }
 
     void ResetNodes()
@@ -77,28 +40,27 @@ public class RoomPathFinding
         {
             for (int y = 0; y < size.y; y++)
             {
-                var node = grid[x, y];
-                node.Previous = null;
-                node.Cost = float.PositiveInfinity;
+                Tile tile = grid[x, y];
+                tile.Previous = null;
+                tile.Cost = float.PositiveInfinity;
             }
         }
     }
 
-    public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end, Func<Node, Node, PathCost> costFunction)
+    List<Vector3Int> FindPath(Vector3Int start, Vector3Int end, Func<Tile, Tile, PathCost> costFunction)
     {
         ResetNodes();
-        queue.Clear();
-        closed.Clear();
 
-        queue = new SimplePriorityQueue<Node, float>();
-        closed = new HashSet<Node>();
+        queue = new SimplePriorityQueue<Tile, float>();
+        closed = new HashSet<Tile>();
+        stack = new Stack<Vector3Int>();
 
         grid[start].Cost = 0;
         queue.Enqueue(grid[start], 0);
 
         while (queue.Count > 0)
         {
-            Node node = queue.Dequeue();
+            Tile node = queue.Dequeue();
             closed.Add(node);
 
             if (node.Position == end)
@@ -108,8 +70,10 @@ public class RoomPathFinding
 
             foreach (var offset in neighbors)
             {
-                if (!grid.InBounds(node.Position + offset)) continue;
-                var neighbor = grid[node.Position + offset];
+                var offsetVec3Int = new Vector3Int(offset.x, offset.y);
+
+                if (!grid.InBounds(node.Position + offsetVec3Int)) continue;
+                var neighbor = grid[node.Position + offsetVec3Int];
                 if (closed.Contains(neighbor)) continue;
 
                 var pathCost = costFunction(node, neighbor);
@@ -137,9 +101,32 @@ public class RoomPathFinding
         return null;
     }
 
-    List<Vector2Int> ReconstructPath(Node node)
+    public List<Vector3Int> GetPath(Vector3Int start, Vector3Int endPos)
     {
-        List<Vector2Int> result = new List<Vector2Int>();
+        return FindPath(start, endPos, (Tile a, Tile b) =>
+         {
+             var pathCost = new PathCost();
+
+             pathCost.cost = Vector3Int.Distance(b.Position, endPos);    //heuristic
+
+             if (grid[b.Position].tileType == TileType.Wall)
+             {
+                 pathCost.cost += 1;
+             }
+             else if (grid[b.Position].tileType == TileType.Empty)
+             {
+                 pathCost.cost += 5;
+             }
+
+             pathCost.traversable = true;
+
+             return pathCost;
+         });
+    }
+
+    List<Vector3Int> ReconstructPath(Tile node)
+    {
+        List<Vector3Int> result = new List<Vector3Int>();
 
         while (node != null)
         {

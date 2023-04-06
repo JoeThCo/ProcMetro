@@ -6,12 +6,5 @@ using UnityEngine.Tilemaps;
 [CreateAssetMenu()]
 public class TileSet : ScriptableObject
 {
-    [System.Serializable]
-    public struct Tile 
-    {
-        public string name;
-        public TileBase tileBase;
-    }
-
     public Tile[] allTiles;
 }

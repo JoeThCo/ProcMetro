@@ -9,22 +9,38 @@ public class Room : MonoBehaviour
 
     [Space(10)]
 
+    Grid2D<Tile> grid;
+
     Vector2Int roomSize;
     Direction[] connections;
 
-    TileSet tileSet;
+    static TileSet tileSetStatic;
+
+    RoomPathFinding pathFinding;
 
     #region Init
     public void RoomInit(TileSet tileSet)
     {
-        this.tileSet = tileSet;
+        tileSetStatic = tileSet;
 
         //numbers init
         roomSize = new Vector2Int(Random.Range(5, 20), Random.Range(5, 20));
         connections = MakeDirections();
+        grid = new Grid2D<Tile>(roomSize, Vector3Int.zero);
 
-        FillRoom(roomSize);
-        RemoveExits();
+        for (int y = 0; y < roomSize.y; y++)
+        {
+            for (int x = 0; x < roomSize.x; x++)
+            {
+                grid[x, y] = new Tile(x, y, "Wall");
+            }
+        }
+
+        Debug.Log(grid[0, 0].id);
+
+        pathFinding = new RoomPathFinding(grid);
+
+        List<Vector3Int> testPath = pathFinding.GetPath(Vector3Int.zero, Vector3Int.one * 4);
 
         PrintInfo();
     }
@@ -52,97 +68,20 @@ public class Room : MonoBehaviour
         return output.ToArray();
     }
 
-    void RemoveExits()
-    {
-        int exitSize = 3;
-
-        foreach (Direction dir in connections)
-        {
-            if (dir == Direction.North || dir == Direction.South)
-            {
-                int exitX = Random.Range(0, roomSize.x - exitSize - 1);
-
-                if (dir == Direction.North)
-                {
-                    RemoveHorzLine(new Vector3Int(exitX, roomSize.y - 1), exitSize);
-                }
-                else
-                {
-                    RemoveHorzLine(new Vector3Int(exitX, 0), exitSize);
-                }
-            }
-            else if (dir == Direction.East || dir == Direction.West)
-            {
-                int exitY = Random.Range(0, roomSize.y - exitSize - 1);
-
-                if (dir == Direction.West)
-                {
-                    RemoveVertLine(new Vector3Int(roomSize.x - 1, exitY), exitSize);
-                }
-                else
-                {
-                    RemoveVertLine(new Vector3Int(0, exitY), exitSize);
-                }
-            }
-        }
-    }
-
     #endregion
 
-    #region Setter
-    void FillRoom(Vector2Int roomSize)
+    public static Tile GetTile(string id)
     {
-        for (int y = 0; y < roomSize.y; y++)
+        foreach (Tile t in tileSetStatic.allTiles)
         {
-            for (int x = 0; x < roomSize.x; x++)
+            if (t.id.Equals(id))
             {
-                Vector3Int current = new Vector3Int(x, y);
-
-                SetTile(current, "Wall");
-            }
-        }
-    }
-
-    void RemoveHorzLine(Vector3Int start, int length)
-    {
-        for (int i = 0; i < length; i++)
-        {
-            var current = new Vector3Int(start.x + i, start.y);
-            SetTile(current, "Empty");
-        }
-    }
-
-    void RemoveVertLine(Vector3Int start, int length)
-    {
-        for (int i = 0; i < length; i++)
-        {
-            var current = new Vector3Int(start.x, start.y + i);
-            SetTile(current, "Empty");
-        }
-    }
-
-    void SetTile(Vector3Int cord, string id)
-    {
-        tileMap.SetTile(cord, GetTileBase(id));
-    }
-    #endregion
-
-    #region Getter
-    TileBase GetTileBase(string id)
-    {
-        for (int i = 0; i < tileSet.allTiles.Length; i++)
-        {
-            var current = tileSet.allTiles[i];
-
-            if (current.name.Equals(id))
-            {
-                return current.tileBase;
+                return t;
             }
         }
 
         throw new System.Exception("No tile with id of " + id);
     }
-    #endregion
 
     #region Debug
 

@@ -6,48 +6,49 @@ public class Grid2D<T>
 {
     T[] data;
 
-    public Vector2Int Size { get; private set; }
-    public Vector2Int Offset { get; set; }
+    public Vector3Int Size { get; private set; }
+    public Vector3Int Offset { get; set; }
 
-    public Grid2D(Vector2Int size, Vector2Int offset)
+    public Grid2D(Vector2Int size, Vector3Int offset)
     {
-        Size = size;
+        Size = new Vector3Int(size.x, size.y);
         Offset = offset;
 
         data = new T[size.x * size.y];
     }
 
-    public Grid2D(int size, Vector2Int offset)
+    public Grid2D(int size, Vector3Int offset)
     {
-        Size = new Vector2Int(size, size);
+        Size = new Vector3Int(size, size);
         Offset = offset;
 
         data = new T[size * size];
     }
 
-    public int GetIndex(Vector2Int pos)
+    public int GetIndex(Vector3Int pos)
     {
         return pos.x + (Size.x * pos.y);
     }
 
-    public bool InBounds(Vector2Int pos)
+    public bool InBounds(Vector3Int pos)
     {
-        return new RectInt(Vector2Int.zero, Size).Contains(pos + Offset);
+        var containsCords = new Vector2Int(pos.x + Offset.x, pos.y + Offset.y);
+        return new RectInt(Vector2Int.zero, new Vector2Int(Size.x, Size.y)).Contains(containsCords);
     }
 
     public T this[int x, int y]
     {
         get
         {
-            return this[new Vector2Int(x, y)];
+            return this[new Vector3Int(x, y)];
         }
         set
         {
-            this[new Vector2Int(x, y)] = value;
+            this[new Vector3Int(x, y)] = value;
         }
     }
 
-    public T this[Vector2Int pos]
+    public T this[Vector3Int pos]
     {
         get
         {
